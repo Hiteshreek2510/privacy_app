@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Privacy Score Result</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #f6d365, #fda085);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .result-container {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+    }
+
+    .result-container h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .uploaded-image {
+      width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .score-label {
+      font-size: 18px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .score-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #dc3545;
+      margin-bottom: 20px;
+    }
+
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .action-buttons button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 25px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .explain-btn {
+      background: #007bff;
+      color: white;
+    }
+
+    .explain-btn:hover {
+      background: #0056b3;
+    }
+
+    .edit-btn {
+      background: #ffc107;
+      color: #333;
+    }
+
+    .edit-btn:hover {
+      background: #e0a800;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="result-container">
+    <h2>Privacy Risk</h2>
+    <img src="{{ url_for('static', filename='uploads/' + image_filename) }}" alt="Uploaded Image" style="max-width: 100%; height: 300px;">
+    <div class="score-label">Privacy Risk</div>
+    <div class="score-value">{{ score }}</div>
+     <div class="score-label">Risk level</div>
+    <div class="score-value">{{ risk_level }}</div>
+    <div class="action-buttons">
+      <a href="{{ url_for('chat') }}"><button class="explain-btn">Explain</button></a>
+      <a href="{{ url_for('preview_blurred') }}" ><button class="edit-btn">Sanitize</button></a>
+
+    </div>
+  </div>
+
+</body>
+</html>

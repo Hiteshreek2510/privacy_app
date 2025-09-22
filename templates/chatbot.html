@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Privacy Copilot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+  <div class="gradient-bg">
+    <div class="chat-container">
+      <header>
+        <h1>🛡️ UPLOAD SMART</h1>
+        <p>Your AI assistant for image privacy insights</p>
+      </header>
+
+      {% if score %}
+        <div class="score-box">
+          <p><strong>Privacy Score:</strong> {{ score }}/100</p>
+        </div>
+      {% endif %}
+
+      <div class="chat-box" id="response">
+                {% for chat in chat_history %}
+                  <div class="user-message"><strong>You:</strong> {{ chat.user }}</div>
+                  <div class="bot-message"><strong>Copilot:</strong> {{ chat.bot }}</div>
+                {% endfor %}
+        </div>
+
+
+      <form id="chat-form" method="POST" action="/chat">
+        <input type="text" id="user_query" name="user_query" placeholder="Ask about your image privacy..." autocomplete="off" required />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='logic.js') }}"></script>
+</body>
+</html>

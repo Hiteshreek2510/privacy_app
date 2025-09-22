@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Privacy Scoring and Sanitization</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #d4fc79, #96e6a1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .upload-container {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      text-align: center;
+      width: 400px;
+      transition: all 0.3s ease;
+    }
+
+    .upload-container h3 {
+      margin-bottom: 20px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .upload-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .upload-btn:hover {
+      background: #218838;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      width: 300px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-content h4 {
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+
+    .modal-buttons button {
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 25px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .submit-btn {
+      background: #007bff;
+      color: white;
+    }
+
+    .submit-btn:hover {
+      background: #0056b3;
+    }
+
+    .cancel-btn {
+      background: #dc3545;
+      color: white;
+    }
+
+    .cancel-btn:hover {
+      background: #c82333;
+    }
+  </style>
+</head>
+<body>
+
+ <form class="upload-container" id="uploadForm" action="/privacyscore" method="POST" enctype="multipart/form-data">
+   <h3>Drag & Drop or Click to Add Image</h3>
+   <label class="upload-btn" for="imageUpload">ADD IMAGE</label>
+   <input type="file" id="imageUpload" name="image" accept="image/*" required>
+</form>
+
+
+
+  <!-- Modal -->
+  <div class="modal" id="uploadModal">
+  <div class="modal-content">
+    <h4>Submit this image?</h4>
+    <div class="modal-buttons">
+      <button class="submit-btn" onclick="submitUploadForm()">Submit</button>
+      <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+  <script>
+  const imageInput = document.getElementById('imageUpload');
+  const modal = document.getElementById('uploadModal');
+
+  imageInput.addEventListener('change', () => {
+    if (imageInput.files.length > 0) {
+      modal.style.display = 'flex';
+    }
+  });
+
+  function closeModal() {
+    modal.style.display = 'none';
+    imageInput.value = '';
+  }
+
+  function submitUploadForm() {
+    document.getElementById('uploadForm').submit();
+  }
+</script>
+
+
+</body>
+</html>

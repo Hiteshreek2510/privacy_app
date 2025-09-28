@@ -20,3 +20,5 @@ pillow~=11.1.0
 Werkzeug~=3.0.1
 gunicorn
 onnxruntime
+numpy==1.24.4
+

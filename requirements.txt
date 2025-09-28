@@ -19,3 +19,4 @@ ultralytics~=8.3.199
 pillow~=11.1.0
 Werkzeug~=3.0.1
 gunicorn
+onnxruntime

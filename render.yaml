@@ -4,6 +4,8 @@ services:
     env: python
     region: oregon
     plan: free
+    runtime: python
+    pythonVersion: 3.11
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn flask_app:flask_app
     envVars:
@@ -14,4 +16,4 @@ services:
       - key: PIXEL_BLUR_RADIUS
         value: "12"
       - key: PIXIWAY_APP
-        sync: false  # This keeps it secret and editable only in the dashboard
+        sync: false

@@ -1,63 +1,75 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Blurred Image Preview</title>
+  <title>Sanitized Image Preview</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to right, #ff9a9e, #fad0c4);
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #fceabb, #99ccff);
+      height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      margin: 0;
     }
-    .container {
+
+    .preview-box {
+      background-color: white;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
       text-align: center;
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      width: 500px;
     }
+
+    h2 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+
     img {
       max-width: 100%;
       height: auto;
       margin-bottom: 20px;
-      border-radius: 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
     }
-    button {
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .button-container a button {
       padding: 10px 20px;
-      font-size: 16px;
-      background-color: #0078D4;
+      background-color: #3498db;
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #005fa3;
+
+    .button-container a button:hover {
+      background-color: #2980b9;
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="preview-box">
     <h2>Sanitized Image Preview</h2>
-    <img id="blurredImage" src="{{ url_for('static', filename='sanitized/' + image_filename) }}" alt="Blurred Image" style="max-width: 100%; height: 300px;">
-    <br>
-    <button onclick="downloadImage()">Download Image</button>
+    <img src="{{ url_for('preview') }}" alt="Blurred Image">
+    <div class="button-container">
+      <a href="{{ url_for('preview') }}" download>
+        <button>Download Image</button>
+      </a>
+      <a href="{{ url_for('home') }}">
+        <button>Upload Another</button>
+      </a>
+    </div>
   </div>
-
-  <script>
-    function downloadImage() {
-      const image = document.getElementById("blurredImage");
-      const link = document.createElement("a");
-      link.href = image.src;
-      link.download = "sanitized_image.jpg";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  </script>
 </body>
 </html>

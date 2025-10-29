@@ -1,18 +1,15 @@
-import io
 import os
 import secrets
 import tempfile
 from PIL import Image
 from flask import Flask, request, render_template, session, send_file
 from werkzeug.utils import secure_filename
-from utils.process import privacyapp  # Assuming this is your custom module
+from utils.process import privacyapp
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 app.secret_key = secrets.token_hex(16)
-
-image_buffer = None
 
 @app.route("/")
 def home():
@@ -27,14 +24,13 @@ def upload_image():
     if image.filename == '':
         return "No selected file", 400
 
-    filename = secure_filename(image.filename)
     img = Image.open(image.stream)
-    image_buffer = io.BytesIO()
-    img.save(image_buffer, format='PNG')
-    image_buffer.seek(0)
-    image_bytes = image_buffer.getvalue()
+    temp = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
+    img.save(temp.name)
+    temp_path = temp.name
+    temp.close()
 
-    score = privacyapp(image_buffer)
+    score = privacyapp(temp_path)
     privacy_score, _ = score.privacy_invade()
     privacy_score, _ = score.show_gps()
     _, risk_factor = score.privacy_invade()
@@ -46,11 +42,6 @@ def upload_image():
         risk_level = 'MEDIUM'
     else:
         risk_level = 'HIGH'
-
-    temp = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-    temp.write(image_bytes)
-    temp_path = temp.name
-    temp.close()
 
     session['privacy_score'] = privacy_score
     session['risk_factors'] = risk_factor
@@ -64,7 +55,7 @@ def serve_uploaded_image():
     image_path = session.get('image_path')
     if not image_path or not os.path.exists(image_path):
         return "No image to display", 404
-    return send_file(image_path, mimetype='image/png')
+    return send_file(image_path, mimetype='image/jpeg')
 
 @app.route('/explanation', methods=['GET'])
 def explanation():
@@ -93,17 +84,12 @@ def preview():
     if not image_path or not os.path.exists(image_path):
         return "No image available", 400
 
-    with open(image_path, 'rb') as f:
-        image_bytes = f.read()
-    buffer = io.BytesIO(image_bytes)
-
-    scanner = privacyapp(buffer)
+    scanner = privacyapp(image_path)
     scanner.privacy_invade()
     scanner.show_gps()
 
     sanitized = scanner.blur_sensitive_regions()
-    if sanitized:
-        sanitized.seek(0)
+    if sanitized and os.path.exists(sanitized):
         return send_file(sanitized, mimetype='image/jpeg')
     else:
         return "No blurred image available", 500

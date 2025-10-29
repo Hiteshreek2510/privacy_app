@@ -5,8 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c1c2d061-eea6-41e9-98aa-c4ff7db261c5" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.python-version" beforeDir="false" afterPath="$PROJECT_DIR$/.python-version" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flask_app.py" beforeDir="false" afterPath="$PROJECT_DIR$/flask_app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/sanitized/blurred.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/static/sanitized/blurred.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/blur.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/blur.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/explain.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/explain.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/privacyscore.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/privacyscore.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

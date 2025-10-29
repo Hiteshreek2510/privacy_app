@@ -14,7 +14,7 @@ future~=1.0.0
 Pygments~=2.19.1
 opencv-python~=4.9.0.80
 requests~=2.31.0
-insightface~=0.7.3
+git+https://github.com/deepinsight/insightface.git@v0.7.3
 ultralytics~=8.3.199
 pillow~=11.1.0
 Werkzeug~=3.0.1

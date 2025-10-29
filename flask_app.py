@@ -1,4 +1,3 @@
-import google.generativeai as genai
 from insightface.app import FaceAnalysis
 import cv2
 from ultralytics import YOLO
@@ -8,7 +7,6 @@ from flask import Flask, request, render_template, redirect, url_for,jsonify,ses
 import os
 from werkzeug.utils import secure_filename
 import requests
-import secrets
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
@@ -43,9 +41,9 @@ def upload_image():
     _,risk_factor = score.show_gps()
 
     risk_level = ''
-    if privacy_score < 40:
+    if privacy_score < 20:
         risk_level = 'LOW'
-    elif privacy_score < 80:
+    elif privacy_score < 40:
         risk_level = 'MEDIUM'
     else:
         risk_level = 'HIGH'
@@ -60,38 +58,6 @@ def upload_image():
 
     return render_template('privacyscore.html', image_filename=filename, score=privacy_score, risk_level=risk_level)
 
-@app.route('/chat', methods=['GET', 'POST'])
-def chat():
-    privacy_score = session.get('privacy_score', 0)
-    risk_level=session.get('risk_level','')
-    risk_factors = session.get('risk_factors', [])
-    chat_history = session.get('chat_history', [])
-
-    if request.method == 'POST':
-        user_message = request.form['user_query']
-
-        prompt = f"""
-        A user uploaded an image with a privacy score of {privacy_score}/100.
-        and the risk level is {risk_level}
-        The detected risks include: {', '.join(risk_factors)}.
-        The user asked: "{user_message}"
-
-        Please explain the privacy risks in simple terms and offer suggestions to reduce exposure.
-        """
-
-        try:
-            response = model.generate_content(prompt)
-            gemini_reply = response.text
-        except Exception as e:
-            gemini_reply = f"Error: {str(e)}"
-
-        # Append to chat history
-        chat_history.append({"user": user_message, "bot": gemini_reply})
-        session['chat_history'] = chat_history
-
-        return render_template('chatbot.html', score=privacy_score, chat_history=chat_history)
-
-    return render_template('chatbot.html', score=privacy_score, chat_history=chat_history)
 
 @app.route('/preview')
 def preview_blurred():

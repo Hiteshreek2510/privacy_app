@@ -14,8 +14,14 @@ future~=1.0.0
 Pygments~=2.19.1
 opencv-python~=4.9.0.80
 requests~=2.31.0
-insightface~=0.7.3
+git+https://github.com/deepinsight/insightface.git
 ultralytics~=8.3.199
 pillow~=11.1.0
 Werkzeug~=3.0.1
-google-generativeai
+gunicorn
+onnxruntime
+numpy==1.24.4 --only-binary=:all:
+setuptools
+wheel
+
+

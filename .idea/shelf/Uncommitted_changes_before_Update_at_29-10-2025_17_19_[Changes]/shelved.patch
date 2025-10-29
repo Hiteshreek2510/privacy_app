@@ -1,0 +1,141 @@
+Index: flask_app.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import google.generativeai as genai\r\nfrom insightface.app import FaceAnalysis\r\nimport cv2\r\nfrom ultralytics import YOLO\r\nfrom PIL import Image\r\nimport piexif\r\nfrom flask import Flask, request, render_template, redirect, url_for,jsonify,session\r\nimport os\r\nfrom werkzeug.utils import secure_filename\r\nimport requests\r\nimport secrets\r\n\r\napp = Flask(__name__)\r\napp.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')\r\nos.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)\r\ngenai.configure(api_key=\"AIzaSyAhqeBYe7s-64i04iU47ydf8M-6V_gI9Uk\")\r\nmodel = genai.GenerativeModel(\"gemini-1.5-flash-latest\")\r\napp.secret_key = secrets.token_hex(16)\r\n@app.route(\"/\")\r\ndef home():\r\n    return render_template(\"index.html\")\r\n\r\n\r\n@app.route('/privacyscore', methods=['POST'])\r\ndef upload_image():\r\n    if 'image' not in request.files:\r\n        return \"No image uploaded\", 400\r\n\r\n    image = request.files['image']\r\n    if image.filename == '':\r\n        return \"No selected file\", 400\r\n\r\n    filename = secure_filename(image.filename)\r\n    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)\r\n    image.save(filepath)\r\n\r\n    score = privacyapp(filepath)\r\n    privacy_score,_ = score.privacy_invade()\r\n    privacy_score,_ = score.face_detect()\r\n    privacy_score,_ = score.show_gps()\r\n    _,risk_factor = score.privacy_invade()\r\n    _,risk_factor = score.face_detect()\r\n    _,risk_factor = score.show_gps()\r\n\r\n    risk_level = ''\r\n    if privacy_score < 40:\r\n        risk_level = 'LOW'\r\n    elif privacy_score < 80:\r\n        risk_level = 'MEDIUM'\r\n    else:\r\n        risk_level = 'HIGH'\r\n\r\n    sanitized_path = score.blur_sensitive_regions()\r\n    sanitized_filename = os.path.basename(sanitized_path)\r\n\r\n    session['privacy_score'] = privacy_score\r\n    session['risk_factors'] = risk_factor\r\n    session['risk_level'] = risk_level\r\n    session['sanitized_filename'] = sanitized_filename\r\n\r\n    return render_template('privacyscore.html', image_filename=filename, score=privacy_score, risk_level=risk_level)\r\n\r\n@app.route('/chat', methods=['GET', 'POST'])\r\ndef chat():\r\n    privacy_score = session.get('privacy_score', 0)\r\n    risk_level=session.get('risk_level','')\r\n    risk_factors = session.get('risk_factors', [])\r\n    chat_history = session.get('chat_history', [])\r\n\r\n    if request.method == 'POST':\r\n        user_message = request.form['user_query']\r\n\r\n        prompt = f\"\"\"\r\n        A user uploaded an image with a privacy score of {privacy_score}/100.\r\n        and the risk level is {risk_level}\r\n        The detected risks include: {', '.join(risk_factors)}.\r\n        The user asked: \"{user_message}\"\r\n\r\n        Please explain the privacy risks in simple terms and offer suggestions to reduce exposure.\r\n        \"\"\"\r\n\r\n        try:\r\n            response = model.generate_content(prompt)\r\n            gemini_reply = response.text\r\n        except Exception as e:\r\n            gemini_reply = f\"Error: {str(e)}\"\r\n\r\n        # Append to chat history\r\n        chat_history.append({\"user\": user_message, \"bot\": gemini_reply})\r\n        session['chat_history'] = chat_history\r\n\r\n        return render_template('chatbot.html', score=privacy_score, chat_history=chat_history)\r\n\r\n    return render_template('chatbot.html', score=privacy_score, chat_history=chat_history)\r\n\r\n@app.route('/preview')\r\ndef preview_blurred():\r\n    sanitized_filename = session.get('sanitized_filename', 'blurred.jpg')\r\n    return render_template('blur.html', image_filename=sanitized_filename)\r\n\r\nclass privacyapp:\r\n    def __init__(self, img):\r\n        self.img = img\r\n        self.privacy = 0\r\n        self.risk_factors = []\r\n        self.blur_regions = []  # Store regions to blur\r\n\r\n    def privacy_invade(self):\r\n        model = YOLO('best.pt')\r\n        result = model(self.img, conf=0.4)\r\n        skip_class_id = 7\r\n        filtered_boxes = [box for box in result[0].boxes if int(box.cls.item()) != skip_class_id]\r\n        result[0].boxes = filtered_boxes\r\n\r\n        class_id = [0, 1, 2, 3, 4, 5, 6]\r\n        for box in result[0].boxes:\r\n            cls = int(box.cls.item())\r\n            if cls in class_id:\r\n                self.privacy += 20\r\n                self.risk_factors.append(model.names[cls])\r\n                if model.names[cls]=='with_id_card':\r\n                    continue\r\n                x1, y1, x2, y2 = [int(v) for v in box.xyxy[0]]\r\n                self.blur_regions.append((x1, y1, x2 - x1, y2 - y1))\r\n\r\n        return self.privacy, self.risk_factors\r\n\r\n    def face_detect(self):\r\n        count = 0\r\n        app_1 = FaceAnalysis(name='buffalo_l')\r\n        app_1.prepare(ctx_id=0, det_size=(1280, 1280))\r\n        image = cv2.imread(self.img)\r\n        if image.shape[0] > 1000 or image.shape[1] > 1000:\r\n            image = cv2.resize(image, (800, 800))\r\n\r\n        faces = app_1.get(image)\r\n        for face in faces:\r\n            count += 1\r\n            x1, y1, x2, y2 = [int(v) for v in face.bbox]\r\n            # self.blur_regions.append((x1, y1, x2 - x1, y2 - y1))\r\n\r\n        if count > 0:\r\n            self.privacy += count * 10\r\n            self.risk_factors.append('faces')\r\n        else:\r\n            print(\"no faces detected\")\r\n\r\n        return self.privacy, self.risk_factors\r\n\r\n    def show_gps(self):\r\n        exif_dict = piexif.load(self.img)\r\n        gps_data = exif_dict.get(\"GPS\", {})\r\n        if gps_data:\r\n            self.privacy += 20\r\n            self.risk_factors.append('exif_data')\r\n            print('gps data yes')\r\n        return self.privacy, self.risk_factors\r\n\r\n    def blur_sensitive_regions(self, output_path='static/sanitized/blurred.jpg'):\r\n        image = cv2.imread(self.img)\r\n        for (x, y, w, h) in self.blur_regions:\r\n            roi = image[y:y+h, x:x+w]\r\n            blurred_roi = cv2.GaussianBlur(roi, (101, 101), 0)\r\n            image[y:y+h, x:x+w] = blurred_roi\r\n\r\n        temp_path = \"temp_blur.jpg\"\r\n        cv2.imwrite(temp_path, image)\r\n\r\n        pil_img = Image.open(temp_path)\r\n        pil_img.save(output_path, \"jpeg\", exif=piexif.dump({}))\r\n        os.remove(temp_path)\r\n\r\n        print(f\"Sanitized image saved at: {output_path}\")\r\n        return output_path\r\n\r\nif __name__ == \"__main__\":\r\n    app.run(debug=True)\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/flask_app.py b/flask_app.py
+--- a/flask_app.py	(revision cf7a74a809bf7ab2a397952bc324dff0d96431d5)
++++ b/flask_app.py	(date 1761738442908)
+@@ -1,4 +1,3 @@
+-import google.generativeai as genai
+ from insightface.app import FaceAnalysis
+ import cv2
+ from ultralytics import YOLO
+@@ -8,7 +7,6 @@
+ import os
+ from werkzeug.utils import secure_filename
+ import requests
+-import secrets
+ 
+ app = Flask(__name__)
+ app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
+@@ -43,9 +41,9 @@
+     _,risk_factor = score.show_gps()
+ 
+     risk_level = ''
+-    if privacy_score < 40:
++    if privacy_score < 20:
+         risk_level = 'LOW'
+-    elif privacy_score < 80:
++    elif privacy_score < 40:
+         risk_level = 'MEDIUM'
+     else:
+         risk_level = 'HIGH'
+@@ -60,38 +58,6 @@
+ 
+     return render_template('privacyscore.html', image_filename=filename, score=privacy_score, risk_level=risk_level)
+ 
+-@app.route('/chat', methods=['GET', 'POST'])
+-def chat():
+-    privacy_score = session.get('privacy_score', 0)
+-    risk_level=session.get('risk_level','')
+-    risk_factors = session.get('risk_factors', [])
+-    chat_history = session.get('chat_history', [])
+-
+-    if request.method == 'POST':
+-        user_message = request.form['user_query']
+-
+-        prompt = f"""
+-        A user uploaded an image with a privacy score of {privacy_score}/100.
+-        and the risk level is {risk_level}
+-        The detected risks include: {', '.join(risk_factors)}.
+-        The user asked: "{user_message}"
+-
+-        Please explain the privacy risks in simple terms and offer suggestions to reduce exposure.
+-        """
+-
+-        try:
+-            response = model.generate_content(prompt)
+-            gemini_reply = response.text
+-        except Exception as e:
+-            gemini_reply = f"Error: {str(e)}"
+-
+-        # Append to chat history
+-        chat_history.append({"user": user_message, "bot": gemini_reply})
+-        session['chat_history'] = chat_history
+-
+-        return render_template('chatbot.html', score=privacy_score, chat_history=chat_history)
+-
+-    return render_template('chatbot.html', score=privacy_score, chat_history=chat_history)
+ 
+ @app.route('/preview')
+ def preview_blurred():
+Index: .python-version
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.python-version b/.python-version
+new file mode 100644
+--- /dev/null	(date 1761738442902)
++++ b/.python-version	(date 1761738442902)
+@@ -0,0 +1,1 @@
++3.11.4
+Index: render.yaml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/render.yaml b/render.yaml
+new file mode 100644
+--- /dev/null	(date 1761738442911)
++++ b/render.yaml	(date 1761738442911)
+@@ -0,0 +1,19 @@
++services:
++  - type: web
++    name: privacy-backend
++    env: python
++    region: oregon
++    plan: free
++    runtime: python
++    pythonVersion: 3.11
++    buildCommand: pip install -r requirements.txt
++    startCommand: gunicorn flask_app:flask_app
++    envVars:
++      - key: SCORING_THRESHOLD
++        value: "0.7"
++      - key: ENABLE_SANITIZATION
++        value: "true"
++      - key: PIXEL_BLUR_RADIUS
++        value: "12"
++      - key: PIXIWAY_APP
++        sync: false
+Index: requirements.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>piexif~=1.1.3\r\nflask~=3.0.2\r\njupyter~=1.1.1\r\npip~=24.1.2\r\ntyping_extensions~=4.12.2\r\nattrs~=25.3.0\r\nfilelock~=3.15.4\r\nwheel~=0.42.0\r\nsetuptools~=69.0.2\r\npackaging~=24.2\r\nplatformdirs~=4.2.2\r\nCython~=3.1.3\r\nfuture~=1.0.0\r\nPygments~=2.19.1\r\nopencv-python~=4.9.0.80\r\nrequests~=2.31.0\r\ninsightface~=0.7.3\r\nultralytics~=8.3.199\r\npillow~=11.1.0\r\nWerkzeug~=3.0.1\r\ngoogle-generativeai\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/requirements.txt b/requirements.txt
+--- a/requirements.txt	(revision cf7a74a809bf7ab2a397952bc324dff0d96431d5)
++++ b/requirements.txt	(date 1761738442914)
+@@ -14,8 +14,14 @@
+ Pygments~=2.19.1
+ opencv-python~=4.9.0.80
+ requests~=2.31.0
+-insightface~=0.7.3
++git+https://github.com/deepinsight/insightface.git
+ ultralytics~=8.3.199
+ pillow~=11.1.0
+ Werkzeug~=3.0.1
+-google-generativeai
++gunicorn
++onnxruntime
++numpy==1.24.4 --only-binary=:all:
++setuptools
++wheel
++
++

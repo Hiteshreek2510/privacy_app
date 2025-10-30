@@ -3,4 +3,5 @@ services:
     name: privacy-scoring-app
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn flask_app:app --timeout 120
+    startCommand: gunicorn flask_app:app --timeout 120 --workers 1
+

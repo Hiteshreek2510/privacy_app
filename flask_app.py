@@ -2,8 +2,7 @@ import os
 import secrets
 import tempfile
 from PIL import Image
-from flask import Flask, request, render_template, session, send_file
-from werkzeug.utils import secure_filename
+from flask import Flask, request, render_template, session, send_file, after_this_request
 from utils.process import privacyapp
 
 app = Flask(__name__)
@@ -24,17 +23,28 @@ def upload_image():
     if image.filename == '':
         return "No selected file", 400
 
-    img = Image.open(image.stream)
+    # Delete previous image if it exists
+    old_path = session.get('image_path')
+    if old_path and os.path.exists(old_path):
+        os.remove(old_path)
+        print(f"Deleted previous image: {old_path}")
+
+    # Resize and save new image
+    img = Image.open(image.stream).convert("RGB")
+    img = img.resize((640, 640))
     temp = tempfile.NamedTemporaryFile(delete=False, suffix='.jpg')
-    img.save(temp.name)
+    img.save(temp.name, format='JPEG', quality=85)
     temp_path = temp.name
     temp.close()
 
+    # Run privacy scoring
     score = privacyapp(temp_path)
     privacy_score, _ = score.privacy_invade()
     privacy_score, _ = score.show_gps()
     _, risk_factor = score.privacy_invade()
     _, risk_factor = score.show_gps()
+
+    privacy_score = min(privacy_score, 100)
 
     if privacy_score < 40:
         risk_level = 'LOW'
@@ -87,8 +97,15 @@ def preview():
     scanner = privacyapp(image_path)
     scanner.privacy_invade()
     scanner.show_gps()
-
     sanitized = scanner.blur_sensitive_regions()
+
+    @after_this_request
+    def cleanup(response):
+        if os.path.exists(image_path):
+            os.remove(image_path)
+            print(f"Deleted original image after preview: {image_path}")
+        return response
+
     if sanitized and os.path.exists(sanitized):
         return send_file(sanitized, mimetype='image/jpeg')
     else:

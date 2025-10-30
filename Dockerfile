@@ -9,3 +9,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 7860
 
 CMD ["python", "flask_app.py"]
+c*!8wH9_DN'&~aX
